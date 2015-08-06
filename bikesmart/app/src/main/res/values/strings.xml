@@ -66,6 +66,8 @@
     <string name="refresh">Refresh</string>
     <string name="share_bike">Who would you like to share this bike with?</string>
     <string name="title_activity_change_bikes">ChangeBikesActivity</string>
+    <string name="see_rentals">See rentals...</string>
+    <string name="title_activity_rental">RentalActivity</string>
 
 
 </resources>

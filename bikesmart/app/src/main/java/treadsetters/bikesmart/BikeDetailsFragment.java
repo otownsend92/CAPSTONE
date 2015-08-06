@@ -8,6 +8,7 @@ import android.location.Geocoder;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.Property;
+import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,6 +47,7 @@ public class BikeDetailsFragment extends Fragment implements OnMapReadyCallback
 
     protected LatLng current_location = new LatLng(34.4125, -119.8481);
     protected float distance_traveled = 0;
+    private static View V;
 
 
     public BikeDetailsFragment() {
@@ -61,109 +63,184 @@ public class BikeDetailsFragment extends Fragment implements OnMapReadyCallback
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        Log.d(TAG, "onCreateView");
-        // Inflate the layout for this fragment
-        View V = inflater.inflate(R.layout.fragment_bike_details, container, false);
 
-        // Get all the TextView references
-        final TextView bike_name_text = (TextView) V.findViewById(R.id.bike_name);
-        final TextView description_text = (TextView) V.findViewById(R.id.description);
-        final TextView last_used_text = (TextView) V.findViewById(R.id.last_used);
-        final TextView owner_text = (TextView) V.findViewById(R.id.owner);
-        final TextView current_location_text = (TextView) V.findViewById(R.id.current_location);
-        final TextView distance_traveled_text = (TextView) V.findViewById(R.id.distance_traveled);
+        if (V != null) {
+            ViewGroup parent = (ViewGroup) V.getParent();
+            if (parent != null)
+                parent.removeView(V);
+        }
+        try {
+            Log.d(TAG, "onCreateView");
+            // Inflate the layout for this fragment
+            V = inflater.inflate(R.layout.fragment_bike_details, container, false);
 
-        // Get the bike id from passed arguments
-        final Double bike_id = this.getArguments().getDouble("bike_id");
+            // Get all the TextView references
+            final TextView bike_name_text = (TextView) V.findViewById(R.id.bike_name);
+            final TextView description_text = (TextView) V.findViewById(R.id.description);
+            final TextView last_used_text = (TextView) V.findViewById(R.id.last_used);
+            final TextView owner_text = (TextView) V.findViewById(R.id.owner);
+            final TextView current_location_text = (TextView) V.findViewById(R.id.current_location);
+            final TextView distance_traveled_text = (TextView) V.findViewById(R.id.distance_traveled);
 
-        // Get the bike object from parse
-        ParseQuery<ParseObject> bike_query = ParseQuery.getQuery("bike");
-        bike_query.whereEqualTo("bike_id", bike_id);
-        bike_query.findInBackground(new FindCallback<ParseObject>() {
-            public void done(List<ParseObject> postList, ParseException e) {
-                if (e != null) {
-                    Log.d(TAG, e.toString());
-                } else if(postList.size()==0) {
-                    Log.d(TAG, "No user bikes found.");
-                } else {
-                    Log.d(TAG, "bike found");
-                    // Update bike name, details, and distance traveled
-                    bike = postList.get(0);
-                    bike_name_text.setText(bike.getString("bike_name"));
-                    description_text.setText("Description: " + bike.getString("bike_description"));
-                    Double km_traveled = bike.getDouble("dist_traveled") / 1000.0;
-                    String dist_string = (new DecimalFormat("#.#").format(km_traveled));
-                    distance_traveled_text.setText("Distance Traveled: " +
-                                                    dist_string.toString() +
-                                                    " km");
+            // Get the bike id from passed arguments
+            final Double bike_id = this.getArguments().getDouble("bike_id");
+            final boolean rental = getArguments().getBoolean("rental");
 
-                    final Double last_user_id = bike.getDouble("last_user");
-                    Double owner_id = bike.getDouble("owner_id");
+            //TODO: get flag indicating bike or rental; if rental, render only relevant details (return date, etc)
 
-                    // Update the Last User field
-                    ParseQuery<ParseUser> user_query = ParseUser.getQuery();
-                    user_query.whereEqualTo("user_id", last_user_id);
-                    user_query.findInBackground(new FindCallback<ParseUser>() {
-                        public void done(List<ParseUser> postList, ParseException e) {
-                            if (e != null) {
-                                Log.d(TAG, e.toString());
-                            } else if(postList.size()==0) {
-                                Log.d(TAG, "No user bikes found.");
-                            } else {
-                                last_used_text.setText("Last used by: " + postList.get(0).getString("username"));
+            if (rental) {
+                ParseQuery<ParseObject> bike_query = ParseQuery.getQuery("rental");
+                bike_query.whereEqualTo("bike_id", bike_id);
+                bike_query.findInBackground(new FindCallback<ParseObject>() {
+                    public void done(List<ParseObject> postList, ParseException e) {
+                        if (e != null) {
+                            Log.d(TAG, e.toString());
+                        } else if (postList.size() == 0) {
+                            Log.d(TAG, "No rentals found.");
+                        } else {
+                            Log.d(TAG, "rental found");
+                            // Update bike name, details, and distance traveled
+                            bike = postList.get(0);
+                            bike_name_text.setText(bike.getString("bike_name"));
+                            description_text.setText("Description: " + bike.getString("bike_description"));
+                            Double km_traveled = bike.getDouble("dist_traveled") / 1000.0;
+                            String dist_string = (new DecimalFormat("#.#").format(km_traveled));
+                            distance_traveled_text.setText("Distance Traveled: " +
+                                    dist_string.toString() +
+                                    " km");
+
+
+                            // Update the map
+                            if(bikeMarker != null) {
+                                ParseGeoPoint bikeGeoPoint = (ParseGeoPoint) bike.get("current_loc");
+                                current_location = new LatLng(bikeGeoPoint.getLatitude(), bikeGeoPoint.getLongitude());
+
+                                bikeMarker.setPosition(current_location);
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 14.0f));
                             }
-                        }
-                    });
 
-                    // Update the Owner field
-                    ParseQuery<ParseUser> owner_query = ParseUser.getQuery();
-                    owner_query.whereEqualTo("user_id", owner_id);
-                    owner_query.findInBackground(new FindCallback<ParseUser>() {
-                        public void done(List<ParseUser> postList, ParseException e) {
-                            if (e != null) {
-                                Log.d(TAG, e.toString());
-                            } else if(postList.size()==0) {
-                                Log.d(TAG, "No user bikes found.");
-                            } else {
-                                owner_text.setText("Owner: " + postList.get(0).getString("username"));
+                            // Get an address string from current_location
+                            Geocoder geocoder = new Geocoder(getActivity());
+                            try {
+                                List <Address> addresses = geocoder.getFromLocation(
+                                        current_location.latitude,
+                                        current_location.longitude,
+                                        1); //Ask for only 1 address
+                                if(addresses != null) {
+                                    current_location_text.setText("Current Location: " +
+                                            addresses.get(0).getAddressLine(0) );
+                                }
+                            } catch (Exception x) {
+                                Log.d(TAG, x.toString());
                             }
+
                         }
-                    });
 
-                    // Update the map
-                    if(bikeMarker != null) {
-                        ParseGeoPoint bikeGeoPoint = (ParseGeoPoint) bike.get("current_loc");
-                        current_location = new LatLng(bikeGeoPoint.getLatitude(), bikeGeoPoint.getLongitude());
 
-                        bikeMarker.setPosition(current_location);
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 14.0f));
                     }
+                });
 
-                    // Get an address string from current_location
-                    Geocoder geocoder = new Geocoder(getActivity());
-                    try {
-                         List <Address> addresses = geocoder.getFromLocation(
-                                                              current_location.latitude,
-                                                              current_location.longitude,
-                                                              1); //Ask for only 1 address
-                         if(addresses != null) {
-                             current_location_text.setText("Current Location: " +
-                                                           addresses.get(0).getAddressLine(0) );
-                         }
-                    } catch (Exception x) {
-                        Log.d(TAG, x.toString());
-                    }
 
-                }
             }
-        });
+            else {
+                // Get the bike object from parse
+                ParseQuery<ParseObject> bike_query = ParseQuery.getQuery("bike");
+                bike_query.whereEqualTo("bike_id", bike_id);
+                bike_query.findInBackground(new FindCallback<ParseObject>() {
+                    public void done(List<ParseObject> postList, ParseException e) {
+                        if (e != null) {
+                            Log.d(TAG, e.toString());
+                        } else if(postList.size()==0) {
+                            Log.d(TAG, "No user bikes found.");
+                        } else {
+                            Log.d(TAG, "bike found");
+                            // Update bike name, details, and distance traveled
+                            bike = postList.get(0);
+                            bike_name_text.setText(bike.getString("bike_name"));
+                            description_text.setText("Description: " + bike.getString("bike_description"));
+                            Double km_traveled = bike.getDouble("dist_traveled") / 1000.0;
+                            String dist_string = (new DecimalFormat("#.#").format(km_traveled));
+                            distance_traveled_text.setText("Distance Traveled: " +
+                                    dist_string.toString() +
+                                    " km");
+
+                            final Double last_user_id = bike.getDouble("last_user");
+                            Double owner_id = bike.getDouble("owner_id");
+
+                            // Update the Last User field
+                            ParseQuery<ParseUser> user_query = ParseUser.getQuery();
+                            user_query.whereEqualTo("user_id", last_user_id);
+                            user_query.findInBackground(new FindCallback<ParseUser>() {
+                                public void done(List<ParseUser> postList, ParseException e) {
+                                    if (e != null) {
+                                        Log.d(TAG, e.toString());
+                                    } else if(postList.size()==0) {
+                                        Log.d(TAG, "No user bikes found.");
+                                    } else {
+                                        last_used_text.setText("Last used by: " + postList.get(0).getString("username"));
+                                    }
+                                }
+                            });
+
+                            // Update the Owner field
+                            ParseQuery<ParseUser> owner_query = ParseUser.getQuery();
+                            owner_query.whereEqualTo("user_id", owner_id);
+                            owner_query.findInBackground(new FindCallback<ParseUser>() {
+                                public void done(List<ParseUser> postList, ParseException e) {
+                                    if (e != null) {
+                                        Log.d(TAG, e.toString());
+                                    } else if(postList.size()==0) {
+                                        Log.d(TAG, "No user bikes found.");
+                                    } else {
+                                        owner_text.setText("Owner: " + postList.get(0).getString("username"));
+                                    }
+                                }
+                            });
+
+                            // Update the map
+                            if(bikeMarker != null) {
+                                ParseGeoPoint bikeGeoPoint = (ParseGeoPoint) bike.get("current_loc");
+                                current_location = new LatLng(bikeGeoPoint.getLatitude(), bikeGeoPoint.getLongitude());
+
+                                bikeMarker.setPosition(current_location);
+                                mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 14.0f));
+                            }
+
+                            // Get an address string from current_location
+                            Geocoder geocoder = new Geocoder(getActivity());
+                            try {
+                                List <Address> addresses = geocoder.getFromLocation(
+                                        current_location.latitude,
+                                        current_location.longitude,
+                                        1); //Ask for only 1 address
+                                if(addresses != null) {
+                                    current_location_text.setText("Current Location: " +
+                                            addresses.get(0).getAddressLine(0) );
+                                }
+                            } catch (Exception x) {
+                                Log.d(TAG, x.toString());
+                            }
+
+                        }
+                    }
+                });
 
 
-        MapFragment mapFragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.map);
-        if(mapFragment != null) {
-            mapFragment.getMapAsync(this);
+                MapFragment mapFragment = (MapFragment) getChildFragmentManager().findFragmentById(R.id.map);
+                if(mapFragment != null) {
+                    mapFragment.getMapAsync(this);
+                }
+
+            }
+
+
+
+        } catch (InflateException e) {
+        /* map is already there, just return view as it is */
         }
         return V;
+
+
     }
 
     @Override

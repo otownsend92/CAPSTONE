@@ -134,7 +134,6 @@ public class HomeFragment extends Fragment {
         final View rootView = inflater.inflate(R.layout.fragment_home, container, false);
 
         current_user = ParseUser.getCurrentUser();
-
         changeDefaultBikeText = (TextView) rootView.findViewById(R.id.defaultBikeText);
 
         activeBikeText = (TextView) rootView.findViewById(R.id.active_bike_name);

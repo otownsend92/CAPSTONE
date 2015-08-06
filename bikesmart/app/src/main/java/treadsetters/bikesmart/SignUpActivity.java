@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -12,11 +13,18 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.parse.FindCallback;
 import com.parse.ParseException;
+import com.parse.ParseFile;
+import com.parse.ParseGeoPoint;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
 import com.parse.ParseUser;
+import com.parse.SaveCallback;
 import com.parse.SignUpCallback;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Activity which displays a login screen to the user.
@@ -116,11 +124,13 @@ public class SignUpActivity extends Activity {
         user.put("default_bike_id", 0);
         user.put("bikes_owned", new ArrayList<Double>());
         user.put("bikes_used", new ArrayList<String>());
+        user.put("bikes_rented", new ArrayList<Double>());
 //        user.put("friends", "");
         user.put("groups", "");
         user.put("notifications", "");
         user.put("messages", "");
         user.put("active_bike", -1);
+        user.put("balance", "");
 
         // Call the Parse signup method
         user.signUpInBackground(new SignUpCallback() {
@@ -133,6 +143,7 @@ public class SignUpActivity extends Activity {
                 } else {
                     // Start an intent for the dispatch activity
                     Application.updateParseInstallation(ParseUser.getCurrentUser());
+                    initializeRentals();
                     Intent intent = new Intent(SignUpActivity.this, DispatchActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
@@ -140,4 +151,51 @@ public class SignUpActivity extends Activity {
             }
         });
     }
+
+    public void initializeRentals() {
+        //*****************************************************************************************
+        //TODO: REMOVE this section, used to clear rentals
+
+        ParseQuery<ParseObject> query = ParseQuery.getQuery("rental");
+        query.findInBackground(new FindCallback<ParseObject>() {
+            public void done(List<ParseObject> postList, ParseException e) {
+                if (e == null && postList.size() > 0) {
+                    postList.get(0).deleteInBackground();
+                    Log.d("Clearing Rentals", "rental deleted");
+                } else {
+                    Log.d("Clearing Rentals", "Delete rental failed...");
+                }
+            }
+        });
+
+
+        //*****************************************************************************
+
+        String[] rentalNames = { "smartMountain", "smartRoad", "smartHybrid" };
+        String[] rentalDescriptions = { "Standard Mountain Bike", "Standard Road Bike", "Standard Hybrid Bike" };
+        Double[] rentalRates = { 25.00, 35.00, 20.00 };
+
+        ParseUser current_user = ParseUser.getCurrentUser();
+        ArrayList<Double> available_rentals = new ArrayList<Double>();
+        byte[] byteArray = new byte[5]; // bullshit filler, fix
+        ParseFile roundBikeImage = new ParseFile("roundBikeImage.jpg", byteArray);
+
+        for (int k = 0; k < rentalNames.length; k++) {
+            ParseObject rental = new ParseObject("rental");
+            double bikeID = Math.random() * 1000000;
+            rental.put("bike_id", bikeID);
+            rental.put("bike_name", rentalNames[k]);
+            rental.put("bike_description", rentalDescriptions[k]);
+            rental.put("bike_rate", rentalRates[k]);
+            rental.put("current_loc", new ParseGeoPoint(34.413329, -119.860972));
+            rental.put("dist_traveled", 0);
+            rental.saveInBackground();
+            available_rentals.add(bikeID);
+        }
+        current_user.put("available_rentals", available_rentals);
+        current_user.saveInBackground();
+
+    }
+
+
 }

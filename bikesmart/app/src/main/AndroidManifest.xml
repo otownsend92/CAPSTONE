@@ -18,11 +18,13 @@
       IMPORTANT: Change "com.parse.tutorials.pushnotifications.permission.C2D_MESSAGE" in the lines below
       to match your app's package name + ".permission.C2D_MESSAGE".
     -->
-    <permission android:protectionLevel="signature"
-        android:name="treadsetters.bikesmart.permission.C2D_MESSAGE" />
+    <permission
+        android:name="treadsetters.bikesmart.permission.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="treadsetters.bikesmart.permission.C2D_MESSAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:name=".Application"
@@ -61,16 +63,14 @@
         <service
             android:name=".LocationService"
             android:enabled="true" />
-
         <service android:name="com.parse.PushService" />
 
-         <meta-data
+        <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDRn-vujGlHN5yhMGzWQqsVxlRUZ23pq4c"/>
+            android:value="AIzaSyDRn-vujGlHN5yhMGzWQqsVxlRUZ23pq4c" />
 
         <activity
             android:name=".DashboardActivity"
@@ -96,7 +96,7 @@
                 <action android:name="com.google.android.c2dm.intent.RECEIVE" />
                 <action android:name="com.google.android.c2dm.intent.REGISTRATION" />
 
-<!--                   IMPORTANT: Change "com.parse.tutorials.pushnotifications" to match your app's package name. -->
+                <!-- IMPORTANT: Change "com.parse.tutorials.pushnotifications" to match your app's package name. -->
                 <category android:name="treadsetters.bikesmart" />
             </intent-filter>
         </receiver>
@@ -131,6 +131,11 @@
             android:name=".ChangeBikesActivity"
             android:label="@string/title_activity_change_bikes" >
         </activity>
+        <activity
+            android:name=".RentalActivity"
+            android:screenOrientation="portrait"
+            android:label="@string/title_activity_rental" >
+        </activity>
     </application>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
 </manifest>

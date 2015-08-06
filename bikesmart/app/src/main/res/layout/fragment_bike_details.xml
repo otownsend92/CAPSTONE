@@ -34,7 +34,6 @@
 
     <TextView
         android:id="@+id/last_used"
-        android:text="Last used by: Unavailable"
         android:textColor="@android:color/white"
         android:textSize="17sp"
         android:layout_width="wrap_content"
@@ -43,7 +42,6 @@
 
     <TextView
         android:id="@+id/owner"
-        android:text="Owner: Unavailable"
         android:textColor="@android:color/white"
         android:textSize="17sp"
         android:layout_width="wrap_content"
@@ -61,25 +59,25 @@
 
     <TextView
         android:id="@+id/current_location"
-        android:text="Current Location: Unavailable"
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:gravity="center_horizontal"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_gravity="center_horizontal"
+        android:text="Current Location: Unavailable" />
 
     <TextView
         android:id="@+id/distance_traveled"
-        android:text="Distance Traveled: Unavailable"
         android:textColor="@android:color/white"
         android:textSize="20sp"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:gravity="center_horizontal"
-        android:layout_gravity="center_horizontal"/>
+        android:layout_gravity="center_horizontal"
+        android:text="Distance Traveled: Unavailable" />
 
 
 </LinearLayout>

@@ -8,6 +8,7 @@
         android:layout_height="wrap_content"
         android:scaleType="center"
         android:contentDescription="@string/add_bike" />
+
     <EditText
         android:id="@+id/bike_name"
         android:singleLine="true"

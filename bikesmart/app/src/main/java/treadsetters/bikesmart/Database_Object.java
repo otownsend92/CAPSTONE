@@ -12,6 +12,7 @@ import java.util.ArrayList;
  */
 public class Database_Object {
 
+    //TODO: add balance to BikeSmart_User?
     /*
     Class to add new user to BikeSmart database
      */
@@ -153,7 +154,72 @@ public class Database_Object {
 
     }
 
+    public class BikeSmart_Rental {
+        // bike_name
+        String bike_name;
+        // bike_id
+        Double bike_id;
+        // bike_description
+        String bike_description;
+        // rental rate per day
+        Double bike_rate;
 
+        /*
+        Bike constructor
+         */
+        BikeSmart_Rental(String r_name,
+                       String r_description, Double r_rate) {
+
+            this.bike_id = Math.random() * 1000000;
+            this.bike_name = r_name;
+            this.bike_description = r_description;
+            this.bike_rate = r_rate;
+        }
+
+        /*
+        Stores local bike variables into a Parse object. Returns Parse Object
+         */
+        public ParseObject setRentalData() {
+
+            ParseUser current_user = ParseUser.getCurrentUser();
+            ParseObject new_rental = new ParseObject("rental");
+            new_rental.put("bike_name", this.bike_name);
+            new_rental.put("bike_description", this.bike_description);
+            new_rental.put("bike_rate", this.bike_rate);
+
+            return new_rental;
+
+        }
+
+        /*
+        Save bike object to database
+         */
+        public void saveRentalToParse(ParseObject new_rental) {
+
+
+            // Save the post and return
+            new_rental.saveInBackground(new SaveCallback() {
+                @Override
+                public void done(ParseException e) {
+                    if (e == null) {
+                        // saved successfully
+                    } else {
+//                        Toast.makeText(BikesFragment.getActivity(),
+//                                "Error saving: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+
+        public void deleteRental(String bikeName) {
+
+        }
+
+        public void deleteRental(Double bikeID) {
+
+        }
+
+    }
 
 
     /*

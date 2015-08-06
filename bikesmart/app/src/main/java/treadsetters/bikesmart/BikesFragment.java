@@ -6,6 +6,7 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -60,11 +61,12 @@ public class BikesFragment extends Fragment {
     HashMap<String, List<String>> bikeLists;
     List<String> bikesOwned;
     List<String> bikesUsed;
-
+    List<String> bikesRented;
     ParseObject sharedBike;
     boolean shared;
     ImageView button_plus;
     RoundImage roundedImage_plus;
+    static final int RENTAL_REQUEST = 1;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -105,12 +107,28 @@ public class BikesFragment extends Fragment {
 
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Check which request we're responding to
+        if (requestCode == RENTAL_REQUEST) {
+            // Make sure the request was successful
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d("BikesFragment", "onActivityResult");
+                FragmentManager fragmentManager = getFragmentManager();
+                Fragment currentFragment = fragmentManager.findFragmentByTag("bikes");
+                FragmentTransaction fragTransaction = getFragmentManager().beginTransaction();
+                fragTransaction.detach(currentFragment);
+                fragTransaction.attach(currentFragment);
+                fragTransaction.commit();
 
+            }
+        }
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-
+        Log.d("BikesFragment", "onCreateView");
         // Inflate the layout for this fragment
         final View rootView = inflater.inflate(R.layout.fragment_bikes, container, false);
         button_plus = (ImageView) rootView.findViewById(R.id.button_plus);
@@ -132,7 +150,7 @@ public class BikesFragment extends Fragment {
                 builder.setTitle(R.string.add_bike);
 
                 // Add action buttons
-                builder.setPositiveButton(R.string.add, new DialogInterface.OnClickListener() {
+                builder.setNeutralButton(R.string.add, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
 //                                String bikename = bikenameEditText.getText().toString().trim();
@@ -147,6 +165,13 @@ public class BikesFragment extends Fragment {
                         addBikeToParse(bikename, description);
                     }
                 });
+                builder.setPositiveButton(R.string.see_rentals, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        //Toast.makeText(getActivity(), "Add rentals clicked", Toast.LENGTH_LONG).show();
+                        Intent intent = new Intent(getActivity(), RentalActivity.class);
+                        startActivityForResult(intent, RENTAL_REQUEST);
+                    }
+                });
                 builder.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         dialog.dismiss();
@@ -158,6 +183,7 @@ public class BikesFragment extends Fragment {
 
 
                 Button add_pic = (Button) v.findViewById(R.id.add_pic);
+
                 add_pic.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View view) {
                        /* Intent intent = new Intent(
@@ -186,19 +212,23 @@ public class BikesFragment extends Fragment {
 
         bikeHeaders.add("Bikes I Own");
         bikeHeaders.add("Bikes Shared With Me");
+        bikeHeaders.add("Bikes I'm Renting");
 
         bikesOwned = new ArrayList<String>();
         bikesUsed = new ArrayList<String>();
+        bikesRented = new ArrayList<String>();
         expListView = (ExpandableListView) rootView.findViewById(R.id.bike_lists);
 
         getMyBikes();
         getSharedBikes();
+        getRentedBikes();
         listAdapter = new ExpandableListAdapter(getActivity(), bikeHeaders, bikeLists);
         expListView.setAdapter(listAdapter);
 
         expListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
             public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
                 Log.d(MYTAG, "onChildClick");
+                boolean rental = false;
 
                 ParseUser current_user = ParseUser.getCurrentUser();
                 ArrayList<Double> bikes;
@@ -208,10 +238,15 @@ public class BikesFragment extends Fragment {
                     bikes = (ArrayList<Double>) current_user.get("bikes_owned");
                     Log.d("AYY", "owned " + bikes.toString());
 
-                } else {
+                } else if (groupPosition==1) {
                     bikes = (ArrayList<Double>) current_user.get("bikes_used");
                     Log.d("AYY", "used" + bikes.toString());
 
+                }
+                else {
+                    bikes = (ArrayList<Double>) current_user.get("bikes_rented");
+                    rental = true;
+                    Log.d("AYY", "used" + bikes.toString());
                 }
                 // Use ChildPostion as an index into the bikes list
                 // Should be safe because menu was populated from the same list
@@ -233,6 +268,7 @@ public class BikesFragment extends Fragment {
                 // Pass the fragment the arguments it needs
                 Bundle args = new Bundle();
                 args.putDouble("bike_id", bike_id);
+                args.putBoolean("rental", rental);
                 fragment.setArguments(args);
 
                 // Make sure the user can press 'back'
@@ -443,6 +479,32 @@ public class BikesFragment extends Fragment {
 
 
     }
+
+
+    public void getRentedBikes() {
+        bikesRented.clear();
+        ParseUser current_user = ParseUser.getCurrentUser();
+        ArrayList<Double> bikes_rented_copy = new ArrayList<Double>();
+        bikes_rented_copy = (ArrayList<Double>) current_user.get("bikes_rented");
+        Log.d("BikesFragment", "available rentals = " + ((ArrayList<Double>) current_user.get("available_rentals")).size());
+        Log.d("BikesFragment", "num bikes rented = " + bikes_rented_copy.size());
+        for (Double bike_id : bikes_rented_copy) {
+            ParseQuery<ParseObject> query = ParseQuery.getQuery("rental");
+            query.whereEqualTo("bike_id", bike_id);
+            query.findInBackground(new FindCallback<ParseObject>() {
+                public void done(List<ParseObject> postList, ParseException e) {
+                    if (e == null && postList.size() > 0) {
+                        bikesRented.add(postList.get(0).getString("bike_name"));
+                    } else {
+                        Log.d(MYTAG,"Get rentals failed...");
+                    }
+                }
+            });
+        }
+
+        bikeLists.put(bikeHeaders.get(2), bikesRented);
+    }
+
 
     public void addBikeToParse(String bikename, String description) {
         ParseUser current_user = ParseUser.getCurrentUser();
